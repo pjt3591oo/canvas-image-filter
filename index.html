@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>canvas image filter</title>
+</head>
+
+<body>
+  
+  <input type="file" id="file">
+  
+  <div style="display: flex; height: 400px">
+    <div style="text-align: center; width: 300px; height: 300px">
+      <h3>RGB</h3>
+      <div>
+        <canvas id="canvas-color" width="300" height="300"></canvas>
+      </div>
+      <button id="filter-color">filter</button>
+    </div>
+    <div style="text-align: center; width: 300px; height: 300px">
+      <h3>Gray scale</h3>
+      <div>
+        <canvas id="canvas-gray" width="300" height="300"></canvas>
+      </div>
+      <button id="filter-gray">filter</button>
+    </div>
+  </div>
+  
+  <div style="display: flex">
+    <div>
+      <div>
+        <canvas id="canvas-color-filter-r" width="300" height="300"></canvas>
+      </div>
+      <div>
+        <canvas id="canvas-color-filter-g" width="300" height="300"></canvas>
+      </div>
+      <div>
+        <canvas id="canvas-color-filter-b" width="300" height="300"></canvas>
+      </div>
+    </div>
+    <div>
+      <div>
+        <canvas id="canvas-gray-filter-r" width="300" height="300"></canvas>
+      </div>
+      <div>
+        <canvas id="canvas-gray-filter-g" width="300" height="300"></canvas>
+      </div>
+      <div>
+        <canvas id="canvas-gray-filter-b" width="300" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    const canvasColor = document.getElementById('canvas-color')
+    const ctx = canvasColor.getContext('2d');
+    
+    const width = 300;
+    const height = 300;
+
+    const canvasGray = document.getElementById('canvas-gray')
+    const ctxGray = canvasGray.getContext('2d');
+
+    function drawImageData(canvas, context, image) {
+      image.height *= canvas.offsetWidth / image.width;
+      image.width = canvas.offsetWidth;
+
+      if(image.height > canvas.offsetHeight){
+        image.width *= canvas.offsetHeight / image.height;
+        image.height = canvas.offsetHeight;
+      }
+
+      context.drawImage(image, 0, 0, image.width, image.height);
+    }
+
+    /*
+      [R, G, B, A, R, G, B, A]
+      R: 0
+      G: 1
+      B: 2
+      A: 3
+    */ 
+    function extractColor(pixels, filtetColors) {
+      for (let i = 0 ; i < pixels.data.length ; i += 4) {
+        for (let f = 0 ; f < filtetColors.length ; f++) {
+          pixels.data[i + filtetColors[f]] = 0
+        }
+      }
+      return pixels
+    }
+
+    function grayscale(pixels) {
+      for (let i = 0 ; i < pixels.data.length ; i += 4) {
+        const gray = ( pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2] ) / 3
+        pixels.data[i] = gray
+        pixels.data[i + 1] = gray
+        pixels.data[i + 2] = gray
+      }
+
+      return pixels
+    }
+
+    document.getElementById('file').addEventListener('change', (e) => {
+      const image = e.target.files[0]
+      const fileReader = new FileReader();
+
+      fileReader.onload = function (e) {
+          const image = new Image();
+          image.src = e.target.result;
+          image.onload = function () {
+            drawImageData(canvasColor, ctx, image)
+          
+            const gray = grayscale(ctx.getImageData(0, 0, width, height));
+            ctxGray.putImageData(gray, 0, 0)
+          }
+      };
+
+      fileReader.readAsDataURL(image);
+    })
+
+    document.getElementById('filter-color').addEventListener('click', (e) => {
+      const filterRCanvas = document.getElementById('canvas-color-filter-r')
+      const filterRCtx = filterRCanvas.getContext('2d');
+      
+      const filterGCanvas = document.getElementById('canvas-color-filter-g')
+      const filterGCtx = filterGCanvas.getContext('2d');
+      
+      const filterBCanvas = document.getElementById('canvas-color-filter-b')
+      const filterBCtx = filterBCanvas.getContext('2d');
+
+      const r = extractColor(ctx.getImageData(0, 0, width, height), [1, 2]);
+      const g = extractColor(ctx.getImageData(0, 0, width, height), [0, 2]);
+      const b = extractColor(ctx.getImageData(0, 0, width, height), [0, 1]);
+      
+      filterRCtx.putImageData(r, 0, 0);
+      filterGCtx.putImageData(g, 0, 0);
+      filterBCtx.putImageData(b, 0, 0);
+    })
+
+    document.getElementById('filter-gray').addEventListener('click', (e) => {
+      const filterRCanvas = document.getElementById('canvas-gray-filter-r')
+      const filterRCtx = filterRCanvas.getContext('2d');
+      
+      const filterGCanvas = document.getElementById('canvas-gray-filter-g')
+      const filterGCtx = filterGCanvas.getContext('2d');
+      
+      const filterBCanvas = document.getElementById('canvas-gray-filter-b')
+      const filterBCtx = filterBCanvas.getContext('2d');
+
+      const r = extractColor(ctxGray.getImageData(0, 0, width, height), [1, 2]);
+      const g = extractColor(ctxGray.getImageData(0, 0, width, height), [0, 2]);
+      const b = extractColor(ctxGray.getImageData(0, 0, width, height), [0, 1]);
+      
+      filterRCtx.putImageData(r, 0, 0);
+      filterGCtx.putImageData(g, 0, 0);
+      filterBCtx.putImageData(b, 0, 0);
+    })
+  </script>
+
+</body>
+
+</html>
